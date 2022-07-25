@@ -11,6 +11,8 @@ from bi_energy_usage_cdk.constructs.bi_energy_usage_repo \
     import EnergyUsageEcrRepoProperties, EnergyUsageEcrRepoConstruct
 from bi_energy_usage_cdk.constructs.bi_energy_usage_storage \
     import EnergyUsageStorageProperties, EnergyUsageStorageConstruct
+from bi_energy_usage_cdk.constructs.bi_energy_usage_parameters \
+    import EnergyUsageParametersProperties, EnergyUsageParametersConstruct
 from bi_energy_usage_cdk.constructs.bi_energy_usage_task \
     import EnergyUsageTaskProperties, EnergyUsageTaskConstruct
 
@@ -27,10 +29,12 @@ class EnergyUsageAppProperties(StackProps):
                  create_grant_read_to_account_ids: list[str] = None,
                  create_grant_write_to_account_ids: list[str] = None,
                  create_lifecycle_rules: DockerImageLifecycleRules = DockerImageLifecycleRules.DEFAULT,
-                 existing_repo_arn: str = ''):
+                 existing_repo_arn: str = '',
+                 parameter_definitions: dict[str, str] = None,  # once AWS CodeBuild supports Python 3.10, add " | None"
+                 parameter_values: dict[str, str] = None,  # once AWS CodeBuild supports Python 3.10, add " | None"
+                 task_definition_env_vars: dict[str, str] = None):
         """
         Create configuration values for creating an instance of the EnergyUsageAppStack class.
-
         Parameters
         ----------
         context : ctxmgr.ContextManager
@@ -47,8 +51,16 @@ class EnergyUsageAppProperties(StackProps):
             A set of docker image lifecycle rules to be applied to the ECR repository that will be created.
         existing_repo_arn :
             The AWS ARN of the existing ECR repository that will be linked to.
+        parameter_definitions : dict[str, str]
+            A dictionary containing parameter names and parameter descriptions which will become Systems Manager
+            Parameter Store parameters.
+        parameter_values : dict[str, str]
+            A dictionary containing parameter names and parameter values, which sets the values of the Systems
+            Manager Parameter Store parameters.
+        task_definition_env_vars : dict[str, str]
+            A dictionary of environment variable names and values to be created in the docker container when the
+            ECS task runs.
         """
-
         stack_name = context.get_resource_base_name(environment.environment_name.title(), 'App',
                                                     environment.settings.use_default_root_name)
         super().__init__(stack_name=stack_name)
@@ -64,6 +76,9 @@ class EnergyUsageAppProperties(StackProps):
         self.create_lifecycle_rules = create_lifecycle_rules
         self.existing_repo_arn = existing_repo_arn
         self.image_tag = environment.environment_name.lower() + '-current'
+        self.parameter_definitions = parameter_definitions
+        self.parameter_values = parameter_values
+        self.task_definition_env_vars = task_definition_env_vars
 
 
 class EnergyUsageAppStack(Stack):
@@ -75,14 +90,13 @@ class EnergyUsageAppStack(Stack):
                  **kwargs) -> None:
         """
         Create a stack that represents a deployment of the application into a single environment.
-
         Parameters
         ----------
         scope : str
             The scope where the stack should be created.
         construct_id : str
             The logical name of the stack to identify it within the scope.
-        properties : EnergyUsageEcrRepoProperties
+        properties : EnergyUsageAppProperties
             Configuration values for creating the stack.
         kwargs : Any
             Additional keyword arguments.
@@ -90,7 +104,7 @@ class EnergyUsageAppStack(Stack):
         env = Environment(account=properties.environment.account_id, region=properties.context.region)
         super().__init__(scope, construct_id, stack_name=properties.stack_name, env=env, **kwargs)
 
-        # Create Constructs
+        # ECR repository
 
         repo_properties = EnergyUsageEcrRepoProperties(
             create_repo=properties.create_repo,
@@ -102,16 +116,29 @@ class EnergyUsageAppStack(Stack):
         )
         repo = EnergyUsageEcrRepoConstruct(self, 'repo', properties=repo_properties)
 
+        # S3 Bucket
+
         storage_properties = EnergyUsageStorageProperties(base_name=properties.base_name,
                                                           target_account_id=properties.environment.account_id)
         bucket = EnergyUsageStorageConstruct(self, 'storage', properties=storage_properties)
+
+        # Systems Manager Parameters
+
+        parameters_properties = EnergyUsageParametersProperties(base_name=properties.base_name,
+                                                                parameter_definitions=properties.parameter_definitions,
+                                                                parameter_values=properties.parameter_values)
+        parameters = EnergyUsageParametersConstruct(self, 'parameters', properties=parameters_properties)
+
+        # ECS Task Definition
 
         task_properties = EnergyUsageTaskProperties(base_name=properties.base_name,
                                                     vpc_id=properties.environment.vpc_id,
                                                     subnet_ids=properties.environment.private_subnet_ids,
                                                     bucket=bucket.bucket,
                                                     ecr_repo=repo.repo,
-                                                    image_tag=properties.image_tag)
+                                                    image_tag=properties.image_tag,
+                                                    task_definition_env_vars=properties.task_definition_env_vars,
+                                                    parameters=parameters.parameters)
         EnergyUsageTaskConstruct(self, 'task', properties=task_properties)
 
         # Apply Tags

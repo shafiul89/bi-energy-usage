@@ -152,6 +152,8 @@ class EnvironmentContext:
         self.vpc_id = str(context_data['vpc-id'])
         self.private_subnet_ids = [str(x) for x in context_data['private-subnet-ids']]
         self.settings = EnvironmentSettingsContext(context_data['settings'])
+        self.systems_manager_parameter_values = context_data['systems-manager-parameter-values']
+        self.task_definition_env_vars = context_data['task-definition-env-vars']
 
 
 class EnvironmentsContext:
@@ -193,13 +195,13 @@ class EnvironmentsContext:
         self.stg = EnvironmentContext('stg', context_data['stg'])
         self.prod = EnvironmentContext('prod', context_data['prod'])
         self.all = {
-            "sbox": self.sbox,
-            "pers": self.pers,
-            "dev": self.dev,
-            "test": self.test,
-            "int": self.int,
-            "stg": self.stg,
-            "prod": self.prod,
+            'sbox': self.sbox,
+            'pers': self.pers,
+            'dev': self.dev,
+            'test': self.test,
+            'int': self.int,
+            'stg': self.stg,
+            'prod': self.prod,
         }
 
     def get_dict(self):
@@ -216,13 +218,13 @@ class EnvironmentsContext:
             A dictionary containing the context/setting values for each environment.
         """
         x = {
-            "sbox": vars(self.sbox),
-            "pers ": vars(self.pers),
-            "dev": vars(self.dev),
-            "test": vars(self.test),
-            "int": vars(self.int),
-            "stg": vars(self.stg),
-            "prod": vars(self.prod)
+            'sbox': vars(self.sbox),
+            'pers': vars(self.pers),
+            'dev': vars(self.dev),
+            'test': vars(self.test),
+            'int': vars(self.int),
+            'stg': vars(self.stg),
+            'prod': vars(self.prod)
         }
         return x
 
@@ -250,10 +252,11 @@ class ContextManager:
         Create a context object to read values from the cdk.json file.
         """
         app = aws_cdk.App()
-        context_data = app.node.try_get_context("cruk-context")
+        context_data = app.node.try_get_context('cruk-context')
         self.app_info = AppInfoContext(context_data['app-info'])
         self.code_connection = CodeConnectionContext(context_data['code-connection'])
         self.pipeline = PipelineContext(context_data['pipeline'])
+        self.systems_manager_parameters = context_data['systems-manager-parameters']
         self.region = str(context_data['region'])
         self.environments = EnvironmentsContext(context_data['environments'])
 
@@ -318,5 +321,6 @@ class ContextManager:
         print('  app_info = ' + str(vars(self.app_info)))
         print('  code_connection = ' + str(vars(self.code_connection)))
         print('  pipeline = ' + str(vars(self.pipeline)))
+        print('  systems_manager_parameters = ' + str(self.systems_manager_parameters))
         print('  region = ' + str(self.region))
         print('  environments = ' + str(self.environments.get_dict()))

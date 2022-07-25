@@ -22,7 +22,10 @@ if os.getenv('CODEBUILD_CI', '') == '':
         context=context,
         environment=context.environments.pers,
         create_repo=True,
-        create_lifecycle_rules=DockerImageLifecycleRules.NON_PROD
+        create_lifecycle_rules=DockerImageLifecycleRules.NON_PROD,
+        parameter_definitions=context.systems_manager_parameters,
+        parameter_values=context.environments.pers.systems_manager_parameter_values,
+        task_definition_env_vars=context.environments.pers.task_definition_env_vars
     )
     pers_app_stack = EnergyUsageAppStack(app, 'pers-app', pers_app_properties)
 
@@ -33,7 +36,10 @@ dev_app_properties = EnergyUsageAppProperties(
     environment=context.environments.dev,
     create_repo=True,
     create_grant_read_to_account_ids=[context.environments.stg.account_id],
-    create_lifecycle_rules=DockerImageLifecycleRules.NON_PROD
+    create_lifecycle_rules=DockerImageLifecycleRules.NON_PROD,
+    parameter_definitions=context.systems_manager_parameters,
+    parameter_values=context.environments.dev.systems_manager_parameter_values,
+    task_definition_env_vars=context.environments.dev.task_definition_env_vars
 )
 dev_app_stack = EnergyUsageAppStack(app, 'dev-app', dev_app_properties)
 
@@ -51,7 +57,10 @@ test_app_properties = EnergyUsageAppProperties(
     context=context,
     environment=context.environments.test,
     create_repo=False,
-    existing_repo_arn=dev_repo_arn
+    existing_repo_arn=dev_repo_arn,
+    parameter_definitions=context.systems_manager_parameters,
+    parameter_values=context.environments.test.systems_manager_parameter_values,
+    task_definition_env_vars=context.environments.test.task_definition_env_vars
 )
 test_app_stack = EnergyUsageAppStack(app, 'test-app', test_app_properties)
 
@@ -61,7 +70,10 @@ stg_app_properties = EnergyUsageAppProperties(
     context=context,
     environment=context.environments.stg,
     create_repo=False,
-    existing_repo_arn=dev_repo_arn
+    existing_repo_arn=dev_repo_arn,
+    parameter_definitions=context.systems_manager_parameters,
+    parameter_values=context.environments.stg.systems_manager_parameter_values,
+    task_definition_env_vars=context.environments.stg.task_definition_env_vars
 )
 stg_app_stack = EnergyUsageAppStack(app, 'stg-app', stg_app_properties)
 
@@ -72,7 +84,10 @@ prod_app_properties = EnergyUsageAppProperties(
     environment=context.environments.prod,
     create_repo=True,
     create_grant_write_to_account_ids=[context.environments.dev.account_id],
-    create_lifecycle_rules=DockerImageLifecycleRules.PROD
+    create_lifecycle_rules=DockerImageLifecycleRules.PROD,
+    parameter_definitions=context.systems_manager_parameters,
+    parameter_values=context.environments.prod.systems_manager_parameter_values,
+    task_definition_env_vars=context.environments.prod.task_definition_env_vars
 )
 prod_app_stack = EnergyUsageAppStack(app, 'prod-app', prod_app_properties)
 

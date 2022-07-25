@@ -7,7 +7,9 @@ from aws_cdk import (
     aws_iam,
     aws_logs,
     aws_s3,
-    RemovalPolicy
+    aws_ssm,
+    RemovalPolicy,
+    Stack
 )
 from constructs import Construct
 
@@ -18,7 +20,8 @@ class EnergyUsageTaskProperties:
     """
 
     def __init__(self, base_name: str, vpc_id: str, subnet_ids: list[str], bucket: aws_s3.Bucket,
-                 ecr_repo: aws_ecr.Repository, image_tag: str):
+                 ecr_repo: aws_ecr.Repository, image_tag: str, task_definition_env_vars: dict[str, str],
+                 parameters: dict[str, aws_ssm.StringParameter]):
         """
         Create configuration values for creating an instance of the EnergyUsageTaskConstruct class.
 
@@ -36,6 +39,12 @@ class EnergyUsageTaskProperties:
             The ECR repo where the docker image to be executed can be found.
         image_tag : str
             The tag used to select the docker image to run from the images in the ECR repo, e.g. dev-current
+        task_definition_env_vars : dict[str, str]
+            A dictionary containing parameter names and parameter values to be set as environment variables in the
+            docker container.
+        parameters : dict[str, aws_ssm.StringParameter]
+            A dictionary containing parameter names and Systems Manager Parameter Store parameters to be linked to
+            environment variables in the docker container.
         """
         self.base_name = base_name
         self.vpc_id = vpc_id
@@ -43,6 +52,8 @@ class EnergyUsageTaskProperties:
         self.bucket = bucket
         self.ecr_repo = ecr_repo
         self.image_tag = image_tag
+        self.task_definition_env_vars = task_definition_env_vars
+        self.parameters = parameters
 
 
 class EnergyUsageTaskConstruct(Construct):
@@ -77,6 +88,9 @@ class EnergyUsageTaskConstruct(Construct):
         exec_role = self.create_exec_role()
         task_role = self.create_task_role(properties.bucket)
 
+        # additional permissions
+        self.grant_role_parameter_access(properties.base_name, exec_role)
+
         # networking
         vpc = aws_ec2.Vpc.from_lookup(self, 'vpc', vpc_id=properties.vpc_id)
         subnets = []
@@ -89,10 +103,15 @@ class EnergyUsageTaskConstruct(Construct):
         # ecs cluster
         cluster = aws_ecs.Cluster(self, 'task-cluster', vpc=vpc, cluster_name=properties.base_name)
 
+        # add the bucket name to the task definition environment variables
+        properties.task_definition_env_vars['CRUK_AWS_S3_BUCKET_NAME'] = properties.bucket.bucket_name
+
         # task definition
         fargate_task_definition = self.create_task_definition(
             base_name=properties.base_name, exec_role=exec_role, task_role=task_role,
-            ecr_repo=properties.ecr_repo, image_tag=properties.image_tag)
+            ecr_repo=properties.ecr_repo, image_tag=properties.image_tag,
+            task_definition_env_vars=properties.task_definition_env_vars,
+            parameters=properties.parameters)
 
         # scheduled task
         self.create_scheduled_task(
@@ -110,6 +129,7 @@ class EnergyUsageTaskConstruct(Construct):
         aws_iam.Role
             The IAM "execution" role.
         """
+        # exec role - used by the AWS plumbing to run the container, read parameters/secrets and write container logs
         ecs_policy_name = 'service-role/AmazonECSTaskExecutionRolePolicy'  # the AWS built-in policy name
         exec_role = aws_iam.Role(self, 'exec-role',
                                  assumed_by=aws_iam.ServicePrincipal('ecs.amazonaws.com'),
@@ -136,8 +156,9 @@ class EnergyUsageTaskConstruct(Construct):
         -------
         aws_iam.Role
             The IAM "task" role.
-
         """
+        # task role - used by any actions carried out by our Python code running inside the container
+        # the task role usually needs to be created explicitly since typically additional permissions need to be granted
         task_role = aws_iam.Role(self, 'task-role',
                                  assumed_by=aws_iam.ServicePrincipal('ecs.amazonaws.com'))
         task_role_assume_policy = aws_iam.PolicyStatement(
@@ -155,6 +176,34 @@ class EnergyUsageTaskConstruct(Construct):
         )
         task_role.add_to_policy(task_ecs_policy)
         return task_role
+
+    # -------------------- ALLOW EXEC ROLE TO READ PARAMETER / SECRET --------------------
+
+    def grant_role_parameter_access(self, base_name: str, exec_role: aws_iam.Role):
+        """
+        Grant the specified IAM role access to read the Systems Manager Parameter Store parameters for this solution.
+
+        Parameters
+        ----------
+        base_name : str
+            The base name (i.e. prefix) for the Systems Manager Parameter Store parameters.
+        exec_role : aws_iam.Role
+            The IAM role to be granted access to the parameters
+
+        Returns
+        -------
+        None
+            No return value.
+        """
+        current_account_id = Stack.of(self).account
+        current_region = Stack.of(self).region
+        ssm_parameter_arn_match = f'arn:aws:ssm:{current_region}:{current_account_id}:parameter/{base_name}/*'
+        exec_ssm_parameter_store_policy = aws_iam.PolicyStatement(
+            effect=aws_iam.Effect.ALLOW,
+            actions=['ssm:GetParameters'],
+            resources=[ssm_parameter_arn_match]
+        )
+        exec_role.add_to_policy(exec_ssm_parameter_store_policy)
 
     # -------------------- CREATE NETWORK SECURITY GROUP --------------------
 
@@ -186,7 +235,9 @@ class EnergyUsageTaskConstruct(Construct):
     # -------------------- CREATE ECS TASK DEFINITION --------------------
 
     def create_task_definition(self, base_name: str, exec_role: aws_iam.Role, task_role: aws_iam.Role,
-                               ecr_repo: aws_ecr.Repository, image_tag: str):
+                               ecr_repo: aws_ecr.Repository, image_tag: str,
+                               task_definition_env_vars: dict[str, str],
+                               parameters: dict[str, aws_ssm.StringParameter]):
         """
         Create an ECS task definition and CloudWatch log group.
 
@@ -204,13 +255,18 @@ class EnergyUsageTaskConstruct(Construct):
             The ECR repo where the docker image to be executed can be found.
         image_tag : str
             The tag used to select the docker image to run from the images in the ECR repo, e.g. dev-current
+        task_definition_env_vars : dict[str, str]
+            A dictionary containing parameter names and parameter values to be set as environment variables in the
+            docker container.
+        parameters : dict[str, aws_ssm.StringParameter]
+            A dictionary containing parameter names and Systems Manager Parameter Store parameters to be linked to
+            environment variables in the docker container.
 
         Returns
         -------
         aws_ecs.FargateTaskDefinition
             The ECS task definition.
         """
-
         fargate_task_definition = aws_ecs.FargateTaskDefinition(
             self, 'fargate-task',
             family=base_name,
@@ -227,10 +283,16 @@ class EnergyUsageTaskConstruct(Construct):
                                       retention=aws_logs.RetentionDays.SIX_MONTHS)
         log_driver = aws_ecs.LogDrivers.aws_logs(log_group=log_group, stream_prefix='elt')
 
+        container_secrets = {}
+        for parameter_name, parameter in parameters.items():
+            secret = aws_ecs.Secret.from_ssm_parameter(parameter)
+            container_secrets['CRUK_' + parameter_name.upper().replace('-', '_')] = secret
+
         fargate_task_definition.add_container(
             id='container',
             cpu=512,
-            environment={'env_var_1': 'value_1'},  # an example of setting an environment variable on the container
+            environment=task_definition_env_vars,
+            secrets=container_secrets,
             essential=True,
             image=container_image,
             logging=log_driver,
@@ -264,7 +326,6 @@ class EnergyUsageTaskConstruct(Construct):
         -------
         aws_ecs_patterns.ScheduledFargateTask
             The scheduled task.
-
         """
         scheduled_task_definition_options = aws_ecs_patterns.ScheduledFargateTaskDefinitionOptions(
             task_definition=fargate_task_definition
