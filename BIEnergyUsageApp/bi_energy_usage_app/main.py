@@ -4,6 +4,7 @@ import sys
 import bi_energy_usage_app.utilities.app_environment as app_env
 import bi_energy_usage_app.utilities.app_logging as app_logging
 import bi_energy_usage_app.elt.file_processor as file_processor
+import bi_energy_usage_app.elt.snowflake_processor as snowflake_processor
 
 
 def main():
@@ -33,6 +34,9 @@ def main():
 
         # process data files:  download, minimal transform and upload into S3
         file_processor.process_files()
+
+        # reload Snowflake
+        snowflake_processor.load_snowflake()
 
     except Exception as e:
         logging.error('Unhandled application error.', exc_info=e)

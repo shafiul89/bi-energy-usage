@@ -83,7 +83,12 @@
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
             "CRUK_ENVIRONMENT_NAME": "sbox",
-            "CRUK_DELETE_DATA_FILES": "Y"
+            "CRUK_DELETE_DATA_FILES": "Y",
+            "CRUK_SNOWFLAKE_ACCOUNT_NAME": "cruk.eu-west-2.privatelink",
+            "CRUK_SNOWFLAKE_USERNAME": "SVC_SBOX_ENERGY_USAGE",
+            "CRUK_SNOWFLAKE_ROLE_NAME": "SBOX_ENERGY_USAGE_ADMIN",
+            "CRUK_SNOWFLAKE_WH_NAME": "NON_PROD_ALL",
+            "CRUK_SNOWFLAKE_DB_NAME": "SBOX_ENERGY_USAGE"
           }
         },
         "pers": {
@@ -108,8 +113,13 @@
           },
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
-            "CRUK_ENVIRONMENT_NAME": "pers",
-            "CRUK_DELETE_DATA_FILES": "Y"
+            "CRUK_ENVIRONMENT_NAME": "cbailiss",
+            "CRUK_DELETE_DATA_FILES": "Y",
+            "CRUK_SNOWFLAKE_ACCOUNT_NAME": "cruk.eu-west-2.privatelink",
+            "CRUK_SNOWFLAKE_USERNAME": "SVC_CBAILISS_ENERGY_USAGE",
+            "CRUK_SNOWFLAKE_ROLE_NAME": "CBAILISS_ENERGY_USAGE_ADMIN",
+            "CRUK_SNOWFLAKE_WH_NAME": "NON_PROD_ALL",
+            "CRUK_SNOWFLAKE_DB_NAME": "CBAILISS_ENERGY_USAGE"
           }
         },
         "dev": {
@@ -135,7 +145,12 @@
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
             "CRUK_ENVIRONMENT_NAME": "dev",
-            "CRUK_DELETE_DATA_FILES": "Y"
+            "CRUK_DELETE_DATA_FILES": "Y",
+            "CRUK_SNOWFLAKE_ACCOUNT_NAME": "cruk.eu-west-2.privatelink",
+            "CRUK_SNOWFLAKE_USERNAME": "SVC_DEV_ENERGY_USAGE",
+            "CRUK_SNOWFLAKE_ROLE_NAME": "DEV_ENERGY_USAGE_ADMIN",
+            "CRUK_SNOWFLAKE_WH_NAME": "NON_PROD_ALL",
+            "CRUK_SNOWFLAKE_DB_NAME": "SISLAM_DEV_ENERGY_USAGE"
           }
         },
         "test": {
@@ -161,7 +176,12 @@
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
             "CRUK_ENVIRONMENT_NAME": "test",
-            "CRUK_DELETE_DATA_FILES": "Y"
+            "CRUK_DELETE_DATA_FILES": "Y",
+            "CRUK_SNOWFLAKE_ACCOUNT_NAME": "cruk.eu-west-2.privatelink",
+            "CRUK_SNOWFLAKE_USERNAME": "SVC_TEST_ENERGY_USAGE",
+            "CRUK_SNOWFLAKE_ROLE_NAME": "TEST_ENERGY_USAGE_ADMIN",
+            "CRUK_SNOWFLAKE_WH_NAME": "NON_PROD_ALL",
+            "CRUK_SNOWFLAKE_DB_NAME": "TEST_ENERGY_USAGE"
           }
         },
         "int": {
@@ -187,7 +207,12 @@
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
             "CRUK_ENVIRONMENT_NAME": "int",
-            "CRUK_DELETE_DATA_FILES": "Y"
+            "CRUK_DELETE_DATA_FILES": "Y",
+            "CRUK_SNOWFLAKE_ACCOUNT_NAME": "cruk.eu-west-2.privatelink",
+            "CRUK_SNOWFLAKE_USERNAME": "SVC_INT_ENERGY_USAGE",
+            "CRUK_SNOWFLAKE_ROLE_NAME": "INT_ENERGY_USAGE_ADMIN",
+            "CRUK_SNOWFLAKE_WH_NAME": "NON_PROD_ALL",
+            "CRUK_SNOWFLAKE_DB_NAME": "INT_ENERGY_USAGE"
           }
         },
         "stg": {
@@ -213,7 +238,12 @@
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
             "CRUK_ENVIRONMENT_NAME": "stg",
-            "CRUK_DELETE_DATA_FILES": "Y"
+            "CRUK_DELETE_DATA_FILES": "Y",
+            "CRUK_SNOWFLAKE_ACCOUNT_NAME": "cruk.eu-west-2.privatelink",
+            "CRUK_SNOWFLAKE_USERNAME": "SVC_STG_ENERGY_USAGE",
+            "CRUK_SNOWFLAKE_ROLE_NAME": "STG_ENERGY_USAGE_ADMIN",
+            "CRUK_SNOWFLAKE_WH_NAME": "NON_PROD_ALL",
+            "CRUK_SNOWFLAKE_DB_NAME": "STG_ENERGY_USAGE"
           }
         },
         "prod": {
@@ -239,7 +269,12 @@
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
             "CRUK_ENVIRONMENT_NAME": "prod",
-            "CRUK_DELETE_DATA_FILES": "Y"
+            "CRUK_DELETE_DATA_FILES": "Y",
+            "CRUK_SNOWFLAKE_ACCOUNT_NAME": "cruk.eu-west-2.privatelink",
+            "CRUK_SNOWFLAKE_USERNAME": "SVC_PROD_ENERGY_USAGE",
+            "CRUK_SNOWFLAKE_ROLE_NAME": "PROD_ENERGY_USAGE_ADMIN",
+            "CRUK_SNOWFLAKE_WH_NAME": "NON_PROD_ALL",
+            "CRUK_SNOWFLAKE_DB_NAME": "PROD_ENERGY_USAGE"
           }
         }
       }

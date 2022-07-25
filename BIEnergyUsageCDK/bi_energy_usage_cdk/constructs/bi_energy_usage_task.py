@@ -8,6 +8,7 @@ from aws_cdk import (
     aws_logs,
     aws_s3,
     aws_ssm,
+    aws_secretsmanager,
     RemovalPolicy,
     Stack
 )
@@ -90,6 +91,7 @@ class EnergyUsageTaskConstruct(Construct):
 
         # additional permissions
         self.grant_role_parameter_access(properties.base_name, exec_role)
+        self.grant_role_secrets_access(properties.base_name, exec_role)
 
         # networking
         vpc = aws_ec2.Vpc.from_lookup(self, 'vpc', vpc_id=properties.vpc_id)
@@ -205,6 +207,32 @@ class EnergyUsageTaskConstruct(Construct):
         )
         exec_role.add_to_policy(exec_ssm_parameter_store_policy)
 
+    def grant_role_secrets_access(self, base_name: str, exec_role: aws_iam.Role):
+        """
+        Grant the specified IAM role access to read the Secrets Manager secrets for this solution.
+
+        Parameters
+        ----------
+        base_name : str
+            The base name for the Systems Manager secrets.
+        exec_role : aws_iam.Role
+            The IAM role to be granted access to the parameters
+
+        Returns
+        -------
+        None
+            No return value.
+        """
+        current_account_id = Stack.of(self).account
+        current_region = Stack.of(self).region
+        secrets_arn_match = f'arn:aws:secretsmanager:{current_region}:{current_account_id}:secret/{base_name}'
+        exec_secrets_manager_policy = aws_iam.PolicyStatement(
+            effect=aws_iam.Effect.ALLOW,
+            actions=['secretsmanager:GetSecretValue'],
+            resources=[secrets_arn_match]
+        )
+        exec_role.add_to_policy(exec_secrets_manager_policy)
+
     # -------------------- CREATE NETWORK SECURITY GROUP --------------------
 
     def create_security_group(self, vpc: aws_ec2.Vpc):
@@ -287,6 +315,10 @@ class EnergyUsageTaskConstruct(Construct):
         for parameter_name, parameter in parameters.items():
             secret = aws_ecs.Secret.from_ssm_parameter(parameter)
             container_secrets['CRUK_' + parameter_name.upper().replace('-', '_')] = secret
+
+        secrets = aws_secretsmanager.Secret.from_secret_name_v2(self, 'secrets', base_name)
+        snowflake_rsa_passphrase_secret = aws_ecs.Secret.from_secrets_manager(secrets, 'snowflake-rsa-key-passphrase')
+        container_secrets['CRUK_SECRET_SNOWFLAKE_RSA_KEY_PASSPHRASE'] = snowflake_rsa_passphrase_secret
 
         fargate_task_definition.add_container(
             id='container',
