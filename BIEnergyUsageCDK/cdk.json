@@ -42,10 +42,10 @@
         "service-name": "Energy-Usage"
       },
       "code-connection": {
-        "arn": "arn:aws:codestar-connections:eu-west-2:955432237571:connection/.........",
-        "github-owner-name": ".........",
-        "github-repo-name": ".........",
-        "github-branch-name": "........."
+        "arn": "arn:aws:codestar-connections:eu-west-2:955432237571:connection/778b6925-aa1d-4f5e-8668-785f8668ce20",
+        "github-owner-name": "shafiul89",
+        "github-repo-name": "bi-energy-usage",
+        "github-branch-name": "main"
       },
       "pipeline": {
         "trigger-on-push": false,

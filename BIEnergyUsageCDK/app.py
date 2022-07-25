@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 import aws_cdk as cdk
-import bi_energy_usage_cdk.utilities.context_manager
-from bi_energy_usage_cdk.bi_energy_usage_cdk_stack import BiEnergyUsageCdkStack
+import bi_energy_usage_cdk.utilities.context_manager as ctxmgr
 
+from bi_energy_usage_cdk.stacks.bi_energy_usage_pipeline_stack \
+    import EnergyUsagePipelineStack
+
+context = ctxmgr.ContextManager()
 
 app = cdk.App()
-context_mgr = bi_energy_usage_cdk.utilities.context_manager.ContextManager()
-context_mgr.print_context()
-BiEnergyUsageCdkStack(app, "BiEnergyUsageCdkStack")
+
+# deployment pipeline
+
+pipeline_stack = EnergyUsagePipelineStack(app, 'pipeline', context)
+
+# done - all stacks defined
+
 app.synth()
