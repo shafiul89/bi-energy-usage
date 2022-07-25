@@ -11,6 +11,8 @@ from bi_energy_usage_cdk.constructs.bi_energy_usage_repo \
     import EnergyUsageEcrRepoProperties, EnergyUsageEcrRepoConstruct
 from bi_energy_usage_cdk.constructs.bi_energy_usage_storage \
     import EnergyUsageStorageProperties, EnergyUsageStorageConstruct
+from bi_energy_usage_cdk.constructs.bi_energy_usage_snowflake_role \
+    import EnergyUsageSnowflakeRoleProperties, EnergyUsageSnowflakeRoleConstruct
 from bi_energy_usage_cdk.constructs.bi_energy_usage_parameters \
     import EnergyUsageParametersProperties, EnergyUsageParametersConstruct
 from bi_energy_usage_cdk.constructs.bi_energy_usage_task \
@@ -35,6 +37,7 @@ class EnergyUsageAppProperties(StackProps):
                  task_definition_env_vars: dict[str, str] = None):
         """
         Create configuration values for creating an instance of the EnergyUsageAppStack class.
+
         Parameters
         ----------
         context : ctxmgr.ContextManager
@@ -90,6 +93,7 @@ class EnergyUsageAppStack(Stack):
                  **kwargs) -> None:
         """
         Create a stack that represents a deployment of the application into a single environment.
+
         Parameters
         ----------
         scope : str
@@ -121,6 +125,14 @@ class EnergyUsageAppStack(Stack):
         storage_properties = EnergyUsageStorageProperties(base_name=properties.base_name,
                                                           target_account_id=properties.environment.account_id)
         bucket = EnergyUsageStorageConstruct(self, 'storage', properties=storage_properties)
+
+        # Snowflake Role
+
+        snowflake_role_properties = EnergyUsageSnowflakeRoleProperties(
+            snowflake_principal_arn=properties.environment.settings.snowflake_principal_arn,
+            snowflake_principal_external_id=properties.environment.settings.snowflake_principal_external_id,
+            bucket=bucket.bucket)
+        EnergyUsageSnowflakeRoleConstruct(self, 'snowflake-role', properties=snowflake_role_properties)
 
         # Systems Manager Parameters
 

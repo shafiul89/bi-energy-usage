@@ -118,6 +118,8 @@ class EnvironmentSettingsContext:
             A dictionary of values from the per environment 'settings' section of the config file.
         """
         self.use_default_root_name = context_data['use-default-root-name'].upper() == 'Y'
+        self.snowflake_principal_arn = context_data['snowflake-principal-arn']
+        self.snowflake_principal_external_id = context_data['snowflake-principal-external-id']
 
 
 class EnvironmentContext:

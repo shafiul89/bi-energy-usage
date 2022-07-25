@@ -69,7 +69,9 @@
             "subnet-04090b46cf196b5b8"
           ],
           "settings": {
-            "use-default-root-name": "N"
+            "use-default-root-name": "N",
+            "snowflake-principal-arn": "",
+            "snowflake-principal-external-id": ""
           },
           "systems-manager-parameter-values": {
             "enabled": "N",
@@ -80,7 +82,8 @@
           },
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
-            "CRUK_ENVIRONMENT_NAME": "sbox"
+            "CRUK_ENVIRONMENT_NAME": "sbox",
+            "CRUK_DELETE_DATA_FILES": "Y"
           }
         },
         "pers": {
@@ -92,7 +95,9 @@
             "subnet-0735a5fdfd3e5e54e"
           ],
           "settings": {
-            "use-default-root-name": "N"
+            "use-default-root-name": "N",
+            "snowflake-principal-arn": "",
+            "snowflake-principal-external-id": ""
           },
           "systems-manager-parameter-values": {
             "enabled": "Y",
@@ -103,7 +108,8 @@
           },
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
-            "CRUK_ENVIRONMENT_NAME": "pers"
+            "CRUK_ENVIRONMENT_NAME": "pers",
+            "CRUK_DELETE_DATA_FILES": "Y"
           }
         },
         "dev": {
@@ -115,7 +121,9 @@
             "subnet-0735a5fdfd3e5e54e"
           ],
           "settings": {
-            "use-default-root-name": "Y"
+            "use-default-root-name": "Y",
+            "snowflake-principal-arn": "",
+            "snowflake-principal-external-id": ""
           },
           "systems-manager-parameter-values": {
             "enabled": "Y",
@@ -126,7 +134,8 @@
           },
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
-            "CRUK_ENVIRONMENT_NAME": "dev"
+            "CRUK_ENVIRONMENT_NAME": "dev",
+            "CRUK_DELETE_DATA_FILES": "Y"
           }
         },
         "test": {
@@ -138,7 +147,9 @@
             "subnet-0735a5fdfd3e5e54e"
           ],
           "settings": {
-            "use-default-root-name": "Y"
+            "use-default-root-name": "Y",
+            "snowflake-principal-arn": "",
+            "snowflake-principal-external-id": ""
           },
           "systems-manager-parameter-values": {
             "enabled": "N",
@@ -149,7 +160,8 @@
           },
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
-            "CRUK_ENVIRONMENT_NAME": "test"
+            "CRUK_ENVIRONMENT_NAME": "test",
+            "CRUK_DELETE_DATA_FILES": "Y"
           }
         },
         "int": {
@@ -161,7 +173,9 @@
             "subnet-0735a5fdfd3e5e54e"
           ],
           "settings": {
-            "use-default-root-name": "Y"
+            "use-default-root-name": "Y",
+            "snowflake-principal-arn": "",
+            "snowflake-principal-external-id": ""
           },
           "systems-manager-parameter-values": {
             "enabled": "N",
@@ -172,7 +186,8 @@
           },
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
-            "CRUK_ENVIRONMENT_NAME": "int"
+            "CRUK_ENVIRONMENT_NAME": "int",
+            "CRUK_DELETE_DATA_FILES": "Y"
           }
         },
         "stg": {
@@ -184,7 +199,9 @@
             "subnet-0cd7853a189a25b3e"
           ],
           "settings": {
-            "use-default-root-name": "Y"
+            "use-default-root-name": "Y",
+            "snowflake-principal-arn": "",
+            "snowflake-principal-external-id": ""
           },
           "systems-manager-parameter-values": {
             "enabled": "N",
@@ -195,7 +212,8 @@
           },
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
-            "CRUK_ENVIRONMENT_NAME": "stg"
+            "CRUK_ENVIRONMENT_NAME": "stg",
+            "CRUK_DELETE_DATA_FILES": "Y"
           }
         },
         "prod": {
@@ -207,7 +225,9 @@
             "subnet-0cd7853a189a25b3e"
           ],
           "settings": {
-            "use-default-root-name": "Y"
+            "use-default-root-name": "Y",
+            "snowflake-principal-arn": "",
+            "snowflake-principal-external-id": ""
           },
           "systems-manager-parameter-values": {
             "enabled": "N",
@@ -218,7 +238,8 @@
           },
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
-            "CRUK_ENVIRONMENT_NAME": "prod"
+            "CRUK_ENVIRONMENT_NAME": "prod",
+            "CRUK_DELETE_DATA_FILES": "Y"
           }
         }
       }
