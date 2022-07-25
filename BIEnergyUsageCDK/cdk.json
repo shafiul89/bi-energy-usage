@@ -48,7 +48,7 @@
         "github-branch-name": "main"
       },
       "pipeline": {
-        "trigger-on-push": false,
+        "trigger-on-push": true,
         "docker-deploy": true
       },
       "region": "eu-west-2",
