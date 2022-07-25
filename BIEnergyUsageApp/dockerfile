@@ -1,0 +1,32 @@
+FROM public.ecr.aws/docker/library/python:3.10
+
+# Setup env
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+
+# Python env vars
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONFAULTHANDLER 1
+ENV PYTHONUNBUFFERED 1
+
+# Custom environment variable to allow run time code to determine that it is running in a container
+ENV RUNNINGINCONTAINER 1
+
+# Without the following line, the following error occurs:
+# File "C:\Python\pysim\app\main.py", line 1, in <module>
+#    import app.app_logging as app_logging
+#    ModuleNotFoundError: No module named 'app'
+ENV PYTHONPATH /usr
+
+# Set working directory
+WORKDIR /usr
+
+# Copy function code
+COPY bi_energy_usage_app/ ./bi_energy_usage_app/
+
+# Install packages
+COPY requirements.txt  .
+RUN  pip3 install --no-cache-dir -r requirements.txt
+
+# Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
+CMD [ "python", "./bi_energy_usage_app/main.py" ]
