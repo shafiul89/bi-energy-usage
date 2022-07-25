@@ -75,6 +75,42 @@ class EnergyUsagePipelineStack(Stack):
             dev_actions.append(dev_docker_build_action)
         pipeline.add_stage(stage_name='Development', actions=dev_actions)
 
+        # Add Test stage
+        test_env = self.context.environments.test
+        test_approval_action = self.create_manual_approval_action('Test', source_variable_namespace, 1)
+        test_create_change_set_action, test_execute_change_set_action = self.create_cloud_formation_actions(
+            test_env, synth_artifact, 2
+        )
+        test_actions = [test_approval_action, test_create_change_set_action, test_execute_change_set_action]
+        if context.pipeline.docker_deploy:
+            test_retag_action = self.create_docker_retag_image_action(source_artifact, test_env.environment_name, 4)
+            test_actions.append(test_retag_action)
+        pipeline.add_stage(stage_name='Test', actions=test_actions)
+
+        # Add Stg stage
+        stg_env = self.context.environments.stg
+        stg_approval_action = self.create_manual_approval_action('Stg', source_variable_namespace, 1)
+        stg_create_change_set_action, stg_execute_change_set_action = self.create_cloud_formation_actions(
+            stg_env, synth_artifact, 2
+        )
+        stg_actions = [stg_approval_action, stg_create_change_set_action, stg_execute_change_set_action]
+        if context.pipeline.docker_deploy:
+            stg_retag_action = self.create_docker_retag_image_action(source_artifact, stg_env.environment_name, 4)
+            stg_actions.append(stg_retag_action)
+        pipeline.add_stage(stage_name='Staging', actions=stg_actions)
+
+        # Add Prod stage
+        prod_env = self.context.environments.prod
+        prod_approval_action = self.create_manual_approval_action('Prod', source_variable_namespace, 1)
+        prod_create_change_set_action, prod_execute_change_set_action = self.create_cloud_formation_actions(
+            prod_env, synth_artifact, 2
+        )
+        prod_actions = [prod_approval_action, prod_create_change_set_action, prod_execute_change_set_action]
+        if context.pipeline.docker_deploy:
+            prod_docker_image_copy_action = self.create_prod_docker_image_copy_action(source_artifact, 4)
+            prod_actions.append(prod_docker_image_copy_action)
+        pipeline.add_stage(stage_name='Production', actions=prod_actions)
+
     # -------------------- CREATE CODE CONNECTION TO GITHUB --------------------
 
     def create_code_connection_action(self):
@@ -256,7 +292,7 @@ class EnergyUsagePipelineStack(Stack):
 
     def create_dev_docker_build_action(self, source_artifact: aws_codepipeline.Artifact, run_order: int):
         """
-        Create a CodeBuild project that will build a docker image.
+        Create a CodePipeline CodeBuild action that will build a docker image.
 
         This includes creating the CodeBuild project and Log Group.
 
@@ -370,3 +406,291 @@ class EnergyUsagePipelineStack(Stack):
             run_order=run_order
         )
         return docker_build_action
+
+    # -------------------- MANUAL APPROVAL ACTION --------------------
+
+    def create_manual_approval_action(self, environment_name: str, source_variable_namespace: str, run_order: int):
+        """
+        Create a CodePipeline action to request a manual approval before pipeline execution can continue.
+
+        The manual approval prompt includes a link to the commit in GitHub.
+
+        Parameters
+        ----------
+        environment_name : str
+            The name of the environment being deployed to at this stage in the pipeline.
+        source_variable_namespace : str
+            The variable namespace where CodePipeline source variables are stored.
+        run_order : int
+            The position of this action in the CodePipeline stage.
+
+        Returns
+        -------
+        aws_codepipeline_actions.ManualApprovalAction
+            A CodePipeline manual approval action.
+        """
+        cc = self.context.code_connection
+        commit_url = f'https://github.com/{cc.github_owner_name}/{cc.github_repo_name}/commit/'
+        commit_url += '#{' + source_variable_namespace + '.CommitId}'
+        test_approval_action = aws_codepipeline_actions.ManualApprovalAction(
+            action_name=f'{environment_name}-Approval',
+            additional_information='Commit:  #{' + source_variable_namespace + '.CommitMessage}',
+            external_entity_link=commit_url,
+            run_order=run_order
+        )
+        return test_approval_action
+
+    # -------------------- DOCKER IMAGE RETAG ACTION --------------------
+
+    def create_docker_retag_image_action(self,
+                                         source_artifact: aws_codepipeline.Artifact,
+                                         environment_name: str,
+                                         run_order: int):
+        """
+        Create a CodePipeline CodeBuild action that will retag a docker image.
+
+        Two tags will be added to the image:
+
+        (environment_name)-current, e.g. test-current
+
+        (environment_name)-yyyy-mm-dd--HH-MM-SS, e.g. test-20220722--124756
+
+        This method also creates the CodeBuild project and Log Group.
+
+        This also includes creating the necessary IAM policies to allow CodeBuild to interact with the ECR repo
+        to push the docker image tags into the repo.
+
+        Parameters
+        ----------
+        source_artifact : aws_codepipeline.Artifact
+            The CodePipeline artifact containing the source code from GitHub.
+        environment_name : str
+            The name of the environment, e.g. test.
+        run_order : int
+            The position of this action in the CodePipeline stage.
+
+        Returns
+        -------
+        aws_codepipeline_actions.CodeBuildAction
+            The CodePipeline CodeBuild action
+        """
+        # constants
+        dev_account_id = self.context.environments.dev.account_id
+        dev_env_name = self.context.environments.dev.environment_name
+        dev_repo_name = self.context.get_resource_base_name(dev_env_name, '').lower()
+        dev_repo_arn = f'arn:aws:ecr:{self.context.region}:{dev_account_id}:repository/{dev_repo_name}'
+        dev_image_name = f'{dev_account_id}.dkr.ecr.{self.context.region}.amazonaws.com/{dev_repo_name}'
+        dev_image_name_and_tag = dev_image_name + ':$CODEBUILD_RESOLVED_SOURCE_VERSION'
+        env_name_lower = environment_name.lower()
+        env_name_title = environment_name.title()
+
+        # ECR IAM policies for docker push
+        add_policy_1 = aws_iam.PolicyStatement(
+            effect=aws_iam.Effect.ALLOW,  # cannot refer to repo object across stage boundaries, so use repo arn
+            actions=['ecr:*', 'sts:GetServiceBearerToken'],
+            resources=[dev_repo_arn]
+        )
+        add_policy_2 = aws_iam.PolicyStatement(
+            effect=aws_iam.Effect.ALLOW,
+            actions=['ecr:GetAuthorizationToken'],
+            resources=['*']
+        )
+
+        # Docker image re-tagging for non-prod environments after dev
+        get_pwd_cmd = f'aws ecr get-login-password --region {self.context.region} | '
+        get_pwd_cmd += f'docker login --username AWS --password-stdin '
+        get_pwd_cmd += f'{dev_account_id}.dkr.ecr.{self.context.region}.amazonaws.com'
+        docker_pull_cmd = f'docker pull {dev_image_name_and_tag}'
+        tag_cmd_1 = f'docker tag {dev_image_name_and_tag} {dev_image_name}:{env_name_lower}-current'
+        tag_cmd_2 = f'docker tag {dev_image_name_and_tag} {dev_image_name}:{env_name_lower}-$CRUKTAGTIMEUTC'
+        push_cmd = f'docker push {dev_image_name} --all-tags'
+        describe_cmd = f'aws ecr describe-images --region {self.context.region} --repository-name {dev_repo_name} ' + \
+                       f'--image-ids imageTag=$CODEBUILD_RESOLVED_SOURCE_VERSION'
+
+        # Docker image re-tag codebuild spec
+        docker_retag_spec = {
+            'version': '0.2',
+            'phases': {
+                'build': {
+                    'commands': [
+                        'printenv',
+                        'docker version',
+                        get_pwd_cmd,
+                        docker_pull_cmd,
+                        'CRUKTAGTIMEUTC=$(date +"%Y-%m-%d--%H-%M-%S")',
+                        'echo $CRUKTAGTIMEUTC',
+                        tag_cmd_1,
+                        tag_cmd_2,
+                        push_cmd,
+                        describe_cmd
+                    ]
+                }
+            }
+        }
+
+        # Docker build Project
+        project_name = self.context.get_resource_base_name(env_name_title, 'Docker-Retag')
+        log_group = aws_logs.LogGroup(self, env_name_lower + '-docker-retag-log-group',
+                                      log_group_name=f'/pipeline/{project_name.lower()}',
+                                      removal_policy=RemovalPolicy.DESTROY,
+                                      retention=aws_logs.RetentionDays.TWO_YEARS)
+        docker_retag_project = aws_codebuild.Project(
+            self, f'Docker-{env_name_title}-Retag',
+            project_name=project_name,
+            build_spec=aws_codebuild.BuildSpec.from_object(docker_retag_spec),
+            environment=aws_codebuild.BuildEnvironment(
+                build_image=aws_codebuild.LinuxBuildImage.STANDARD_5_0,
+                privileged=True,
+            ),
+            logging=aws_codebuild.LoggingOptions(
+                cloud_watch=aws_codebuild.CloudWatchLoggingOptions(
+                    enabled=True, log_group=log_group, prefix='pipeline'
+                ),
+            ),
+            queued_timeout=Duration.hours(8),
+            timeout=Duration.hours(1)
+        )
+        docker_retag_project.role.add_to_principal_policy(add_policy_1)
+        docker_retag_project.role.add_to_principal_policy(add_policy_2)
+
+        # Docker Action
+        docker_retag_action = aws_codepipeline_actions.CodeBuildAction(
+            action_name=f'Retag-Docker-Image-{env_name_title}',
+            input=source_artifact,
+            project=docker_retag_project,
+            run_order=run_order
+        )
+        return docker_retag_action
+
+    # -------------------- DOCKER IMAGE COPY ACTION --------------------
+
+    def create_prod_docker_image_copy_action(self,
+                                             source_artifact: aws_codepipeline.Artifact,
+                                             run_order: int):
+        """
+        Create a CodePipeline CodeBuild action that will copy a docker image from a non-prod repo to a prod repo.
+
+        Three tags will be added to the image:
+
+        - git commit id, e.g. 6018db2b40d6ed662e94854bbe59a55a40cd02be
+        - prod-current
+        - prod-yyyy-mm-dd--HH-MM-SS, e.g. prod-20220722--124756
+
+        This method also creates the CodeBuild project and Log Group.
+
+        This also includes creating the necessary IAM policies to allow CodeBuild to interact with the ECR repos
+        to pull/push the docker image and tags.
+
+        Parameters
+        ----------
+        source_artifact : aws_codepipeline.Artifact
+            The CodePipeline artifact containing the source code from GitHub.
+        run_order : int
+            The position of this action in the CodePipeline stage.
+
+        Returns
+        -------
+        aws_codepipeline_actions.CodeBuildAction
+            The CodePipeline CodeBuild action
+        """
+        # constants
+        dev_account_id = self.context.environments.dev.account_id
+        dev_env_name = self.context.environments.dev.environment_name
+        dev_repo_name = self.context.get_resource_base_name(dev_env_name, '').lower()
+        dev_repo_arn = f'arn:aws:ecr:{self.context.region}:{dev_account_id}:repository/{dev_repo_name}'
+        dev_image_name = f'{dev_account_id}.dkr.ecr.{self.context.region}.amazonaws.com/{dev_repo_name}'
+        dev_image_name_and_tag = dev_image_name + ':$CODEBUILD_RESOLVED_SOURCE_VERSION'
+        prod_account_id = self.context.environments.prod.account_id
+        prod_env_name = self.context.environments.prod.environment_name
+        prod_repo_name = self.context.get_resource_base_name(prod_env_name, '').lower()
+        prod_repo_arn = f'arn:aws:ecr:{self.context.region}:{prod_account_id}:repository/{prod_repo_name}'
+        prod_image_name = f'{prod_account_id}.dkr.ecr.{self.context.region}.amazonaws.com/{prod_repo_name}'
+        prod_image_name_and_tag = prod_image_name + ':$CODEBUILD_RESOLVED_SOURCE_VERSION'
+
+        # ECR IAM policies for docker pull and push
+        add_policy_1 = aws_iam.PolicyStatement(
+            effect=aws_iam.Effect.ALLOW,  # cannot refer to repo object across stage boundaries, so use repo arn
+            actions=['ecr:*', 'sts:GetServiceBearerToken'],
+            resources=[dev_repo_arn, prod_repo_arn]
+        )
+        add_policy_2 = aws_iam.PolicyStatement(
+            effect=aws_iam.Effect.ALLOW,
+            actions=['ecr:GetAuthorizationToken'],
+            resources=['*']
+        )
+
+        # Docker image copy to prod repo and re-tagging for Prod environment
+        get_pwd_cmd_1 = f'aws ecr get-login-password --region {self.context.region} | '
+        get_pwd_cmd_1 += f'docker login --username AWS --password-stdin '
+        get_pwd_cmd_1 += f'{dev_account_id}.dkr.ecr.{self.context.region}.amazonaws.com'
+        docker_pull_cmd = f'docker pull {dev_image_name_and_tag}'
+        tag_cmd_1 = f'docker tag {dev_image_name_and_tag} {prod_image_name_and_tag}'
+        tag_cmd_2 = f'docker tag {dev_image_name_and_tag} {prod_image_name}:{prod_env_name.lower()}-current'
+        tag_cmd_3 = f'docker tag {dev_image_name_and_tag} {prod_image_name}:{prod_env_name.lower()}-$CRUKTAGTIMEUTC'
+        get_pwd_cmd_2 = f'aws ecr get-login-password --region {self.context.region} | '
+        get_pwd_cmd_2 += f'docker login --username AWS --password-stdin '
+        get_pwd_cmd_2 += f'{prod_account_id}.dkr.ecr.{self.context.region}.amazonaws.com'
+        push_cmd_1 = f'docker push {prod_image_name_and_tag}'
+        push_cmd_2 = f'docker push {prod_image_name}:{prod_env_name}-current'
+        push_cmd_3 = f'docker push {prod_image_name}:{prod_env_name}-$CRUKTAGTIMEUTC'
+        describe_cmd = f'aws ecr describe-images --region {self.context.region} --repository-name {prod_repo_name} ' + \
+                       f'--registry-id {prod_account_id} --image-ids imageTag=$CODEBUILD_RESOLVED_SOURCE_VERSION'
+
+        # docker image build spec
+        docker_push_spec = {
+            'version': '0.2',
+            'phases': {
+                'build': {
+                    'commands': [
+                        'printenv',
+                        'docker version',
+                        get_pwd_cmd_1,
+                        docker_pull_cmd,
+                        'CRUKTAGTIMEUTC=$(date +"%Y-%m-%d--%H-%M-%S")',
+                        'echo $CRUKTAGTIMEUTC',
+                        tag_cmd_1,
+                        tag_cmd_2,
+                        tag_cmd_3,
+                        get_pwd_cmd_2,
+                        push_cmd_1,
+                        push_cmd_2,
+                        push_cmd_3,
+                        describe_cmd
+                    ]
+                }
+            }
+        }
+
+        # Docker push project
+        project_name = self.context.get_resource_base_name(prod_env_name.title(), 'Docker-Push')
+        log_group = aws_logs.LogGroup(self, prod_env_name.lower() + '-docker-push-log-group',
+                                      log_group_name=f'/pipeline/{project_name.lower()}',
+                                      removal_policy=RemovalPolicy.DESTROY,
+                                      retention=aws_logs.RetentionDays.TWO_YEARS)
+        docker_push_project = aws_codebuild.Project(
+            self, f'Docker-Push-{prod_env_name.title()}',
+            project_name=project_name,
+            build_spec=aws_codebuild.BuildSpec.from_object(docker_push_spec),
+            environment=aws_codebuild.BuildEnvironment(
+                build_image=aws_codebuild.LinuxBuildImage.STANDARD_5_0,
+                privileged=True,
+            ),
+            logging=aws_codebuild.LoggingOptions(
+                cloud_watch=aws_codebuild.CloudWatchLoggingOptions(
+                    enabled=True, log_group=log_group, prefix='pipeline'
+                ),
+            ),
+            queued_timeout=Duration.hours(8),
+            timeout=Duration.hours(1)
+        )
+        docker_push_project.role.add_to_principal_policy(add_policy_1)
+        docker_push_project.role.add_to_principal_policy(add_policy_2)
+
+        # Docker Action
+        docker_push_action = aws_codepipeline_actions.CodeBuildAction(
+            action_name=f'Push-Docker-Image-{prod_env_name.title()}',
+            input=source_artifact,
+            project=docker_push_project,
+            run_order=run_order
+        )
+        return docker_push_action
