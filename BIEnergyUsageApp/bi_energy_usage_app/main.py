@@ -3,13 +3,7 @@ import logging
 import sys
 import bi_energy_usage_app.utilities.app_environment as app_env
 import bi_energy_usage_app.utilities.app_logging as app_logging
-
-
-def output_current_time():
-    dt = datetime.datetime.now()
-    sdt = dt.strftime('%H:%M:%S on %A %d %B %Y')
-    logging.info('Hello from the Energy Usage ELT App.')
-    logging.info('The current date and time is %s.', sdt, extra={'timezone': str(dt.astimezone().tzinfo)})
+import bi_energy_usage_app.elt.file_processor as file_processor
 
 
 def main():
@@ -17,7 +11,7 @@ def main():
     try:
         service_name = app_env.get_env_var_value(app_env.EnvironmentVariableNames.SERVICE_NAME)
         if len(service_name) == 0:
-            service_name = 'bi-energy-usage'
+            service_name = 'Energy-Usage-ELT'
         app_logging.start_logging(service_name, 'DEBUG')
     except Exception as e:
         print('Fatal error initialising logging, execution terminated: ' + str(e))
@@ -29,16 +23,16 @@ def main():
         # log environment info
         app_env.log_environment()
 
+        # change local working directory
+        app_env.set_working_directory()
+
         # check process enabled
         if app_env.get_env_var_value(app_env.EnvironmentVariableNames.ENABLED) != 'Y':
             logging.info('AWS Parameter CRUK_ENABLED is not set to Y - exiting.')
             sys.exit(0)
 
-        # same placeholder code for now
-        output_current_time()
-
-        # test error
-        # raise ValueError('The value is bad.')
+        # process data files:  download, minimal transform and upload into S3
+        file_processor.process_files()
 
     except Exception as e:
         logging.error('Unhandled application error.', exc_info=e)
