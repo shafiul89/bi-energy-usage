@@ -31,6 +31,113 @@
     "@aws-cdk/core:target-partitions": [
       "aws",
       "aws-cn"
-    ]
+    ],
+    "cruk-context": {
+      "app-info": {
+        "product-name": "BI",
+        "support-level": "",
+        "cost-centre": "",
+        "sub-project-code": "",
+        "root-name": "SISLAM",
+        "service-name": "Energy-Usage"
+      },
+      "code-connection": {
+        "arn": "arn:aws:codestar-connections:eu-west-2:955432237571:connection/.........",
+        "github-owner-name": ".........",
+        "github-repo-name": ".........",
+        "github-branch-name": "........."
+      },
+      "pipeline": {
+        "trigger-on-push": false,
+        "docker-deploy": true
+      },
+      "region": "eu-west-2",
+      "environments": {
+        "sbox": {
+          "account-id": "373556034990",
+          "vpc-id": "vpc-05a956a3e89cc14ce",
+          "private-subnet-ids": [
+            "subnet-0013a6b9f2462d312",
+            "subnet-0fcde8c889d80feed",
+            "subnet-04090b46cf196b5b8"
+          ],
+          "settings": {
+            "use-default-root-name": "N"
+          }
+        },
+        "pers": {
+          "account-id": "955432237571",
+          "vpc-id": "vpc-0ed78d1d0d9b9015e",
+          "private-subnet-ids": [
+            "subnet-05516e70e29d6b66a",
+            "subnet-00c176d9edad2e786",
+            "subnet-0735a5fdfd3e5e54e"
+          ],
+          "settings": {
+            "use-default-root-name": "N"
+          }
+        },
+        "dev": {
+          "account-id": "955432237571",
+          "vpc-id": "vpc-0ed78d1d0d9b9015e",
+          "private-subnet-ids": [
+            "subnet-05516e70e29d6b66a",
+            "subnet-00c176d9edad2e786",
+            "subnet-0735a5fdfd3e5e54e"
+          ],
+          "settings": {
+            "use-default-root-name": "Y"
+          }
+        },
+        "test": {
+          "account-id": "955432237571",
+          "vpc-id": "vpc-0ed78d1d0d9b9015e",
+          "private-subnet-ids": [
+            "subnet-05516e70e29d6b66a",
+            "subnet-00c176d9edad2e786",
+            "subnet-0735a5fdfd3e5e54e"
+          ],
+          "settings": {
+            "use-default-root-name": "Y"
+          }
+        },
+        "int": {
+          "account-id": "168177810776",
+          "vpc-id": "vpc-0ed78d1d0d9b9015e",
+          "private-subnet-ids": [
+            "subnet-05516e70e29d6b66a",
+            "subnet-00c176d9edad2e786",
+            "subnet-0735a5fdfd3e5e54e"
+          ],
+          "settings": {
+            "use-default-root-name": "Y"
+          }
+        },
+        "stg": {
+          "account-id": "896446010248",
+          "vpc-id": "vpc-09d085203fb33443c",
+          "private-subnet-ids": [
+            "subnet-0db22575f00e3afba",
+            "subnet-074ae8b99aa890b73",
+            "subnet-0cd7853a189a25b3e"
+          ],
+          "settings": {
+            "use-default-root-name": "Y"
+          }
+        },
+        "prod": {
+          "account-id": "555315546283",
+          "vpc-id": "vpc-09d085203fb33443c",
+          "private-subnet-ids": [
+            "subnet-0db22575f00e3afba",
+            "subnet-074ae8b99aa890b73",
+            "subnet-0cd7853a189a25b3e"
+          ],
+          "settings": {
+            "use-default-root-name": "Y"
+          }
+        }
+      }
+    }
   }
 }
