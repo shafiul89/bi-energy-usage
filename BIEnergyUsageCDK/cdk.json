@@ -122,8 +122,8 @@
           ],
           "settings": {
             "use-default-root-name": "Y",
-            "snowflake-principal-arn": "",
-            "snowflake-principal-external-id": ""
+            "snowflake-principal-arn": "arn:aws:iam::291942177718:user/yj24-s-ukst3098",
+            "snowflake-principal-external-id": "CRUK_SFCRole=75_9Ty2DdMwGWIjb9PE01Yxa54J7yg="
           },
           "systems-manager-parameter-values": {
             "enabled": "Y",
