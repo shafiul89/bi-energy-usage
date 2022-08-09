@@ -15,6 +15,8 @@ from bi_energy_usage_cdk.constructs.bi_energy_usage_snowflake_role \
     import EnergyUsageSnowflakeRoleProperties, EnergyUsageSnowflakeRoleConstruct
 from bi_energy_usage_cdk.constructs.bi_energy_usage_parameters \
     import EnergyUsageParametersProperties, EnergyUsageParametersConstruct
+from bi_energy_usage_cdk.constructs.bi_energy_usage_notifications \
+    import EnergyUsageNotificationProperties, EnergyUsageNotificationConstruct
 from bi_energy_usage_cdk.constructs.bi_energy_usage_task \
     import EnergyUsageTaskProperties, EnergyUsageTaskConstruct
 
@@ -141,6 +143,21 @@ class EnergyUsageAppStack(Stack):
                                                                 parameter_values=properties.parameter_values)
         parameters = EnergyUsageParametersConstruct(self, 'parameters', properties=parameters_properties)
 
+        # SNS Notification and Subscription
+
+        notification_topic = None
+        notifications_email_to = str(properties.environment.settings.notifications_email_address)
+        if notifications_email_to is not None and len(notifications_email_to) > 0 and \
+                not str(notifications_email_to).isspace():
+
+            notification_properties = EnergyUsageNotificationProperties(
+                base_name=properties.base_name,
+                subscription_email_address=properties.environment.settings.notifications_email_address)
+
+            notification_topic = EnergyUsageNotificationConstruct(self, "bi-notifications",
+                                                                  properties=notification_properties)
+            notification_topic = notification_topic.topic
+
         # ECS Task Definition
 
         task_properties = EnergyUsageTaskProperties(base_name=properties.base_name,
@@ -150,7 +167,8 @@ class EnergyUsageAppStack(Stack):
                                                     ecr_repo=repo.repo,
                                                     image_tag=properties.image_tag,
                                                     task_definition_env_vars=properties.task_definition_env_vars,
-                                                    parameters=parameters.parameters)
+                                                    parameters=parameters.parameters,
+                                                    notification_topic=notification_topic)
         EnergyUsageTaskConstruct(self, 'task', properties=task_properties)
 
         # Apply Tags

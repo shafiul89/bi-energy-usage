@@ -19,15 +19,11 @@
     "@aws-cdk/core:stackRelativeExports": true,
     "@aws-cdk/aws-rds:lowercaseDbIdentifier": true,
     "@aws-cdk/aws-lambda:recognizeVersionProps": true,
-    "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
     "@aws-cdk-containers/ecs-service-extensions:enableDefaultLogDriver": true,
     "@aws-cdk/aws-ec2:uniqueImdsv2TemplateName": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/aws-iam:minimizePolicies": true,
-    "@aws-cdk/core:validateSnapshotRemovalPolicy": true,
-    "@aws-cdk/aws-codepipeline:crossAccountKeyAliasStackSafeResourceName": true,
-    "@aws-cdk/aws-s3:createDefaultLoggingPolicy": true,
     "@aws-cdk/core:target-partitions": [
       "aws",
       "aws-cn"
@@ -70,8 +66,9 @@
           ],
           "settings": {
             "use-default-root-name": "N",
-            "snowflake-principal-arn": "",
-            "snowflake-principal-external-id": ""
+            "snowflake-principal-arn": "arn:aws:iam::291942177718:user/yj24-s-ukst3098",
+            "snowflake-principal-external-id": "CRUK_SFCRole=75_9Ty2DdMwGWIjb9PE01Yxa54J7yg=",
+            "notifications-email-address": "shafiul.islam89@gmail.com"
           },
           "systems-manager-parameter-values": {
             "enabled": "N",
@@ -88,7 +85,7 @@
             "CRUK_SNOWFLAKE_USERNAME": "SVC_SBOX_ENERGY_USAGE",
             "CRUK_SNOWFLAKE_ROLE_NAME": "SBOX_ENERGY_USAGE_ADMIN",
             "CRUK_SNOWFLAKE_WH_NAME": "NON_PROD_ALL",
-            "CRUK_SNOWFLAKE_DB_NAME": "SBOX_ENERGY_USAGE"
+            "CRUK_SNOWFLAKE_DB_NAME": "SISLAM_DEV_ENERGY_USAGE"
           }
         },
         "pers": {
@@ -101,8 +98,9 @@
           ],
           "settings": {
             "use-default-root-name": "N",
-            "snowflake-principal-arn": "",
-            "snowflake-principal-external-id": ""
+            "snowflake-principal-arn": "arn:aws:iam::291942177718:user/yj24-s-ukst3098",
+            "snowflake-principal-external-id": "CRUK_SFCRole=75_9Ty2DdMwGWIjb9PE01Yxa54J7yg=",
+            "notifications-email-address": "shafiul.islam89@gmail.com"
           },
           "systems-manager-parameter-values": {
             "enabled": "Y",
@@ -113,13 +111,13 @@
           },
           "task-definition-env-vars": {
             "CRUK_SERVICE_NAME": "Energy-Usage-ELT",
-            "CRUK_ENVIRONMENT_NAME": "cbailiss",
+            "CRUK_ENVIRONMENT_NAME": "sislam",
             "CRUK_DELETE_DATA_FILES": "Y",
             "CRUK_SNOWFLAKE_ACCOUNT_NAME": "cruk.eu-west-2.privatelink",
-            "CRUK_SNOWFLAKE_USERNAME": "SVC_CBAILISS_ENERGY_USAGE",
-            "CRUK_SNOWFLAKE_ROLE_NAME": "CBAILISS_ENERGY_USAGE_ADMIN",
+            "CRUK_SNOWFLAKE_USERNAME": "SVC_SBOX_ENERGY_USAGE",
+            "CRUK_SNOWFLAKE_ROLE_NAME": "SBOX_ENERGY_USAGE_ADMIN",
             "CRUK_SNOWFLAKE_WH_NAME": "NON_PROD_ALL",
-            "CRUK_SNOWFLAKE_DB_NAME": "CBAILISS_ENERGY_USAGE"
+            "CRUK_SNOWFLAKE_DB_NAME": "SISLAM_DEV_ENERGY_USAGE"
           }
         },
         "dev": {
@@ -132,8 +130,9 @@
           ],
           "settings": {
             "use-default-root-name": "Y",
-            "snowflake-principal-arn": "arn:aws:iam::291942177718:user/yj24-s-ukst3098",
-            "snowflake-principal-external-id": "CRUK_SFCRole=75_9Ty2DdMwGWIjb9PE01Yxa54J7yg="
+            "snowflake-principal-arn": "arn:aws:iam::955432237571:role/SISLAM-Dev-Energy-Usage-App-snowflakeroleEA171944-1OMIZRMMT28EX",
+            "snowflake-principal-external-id": "CRUK_SFCRole=75_9Ty2DdMwGWIjb9PE01Yxa54J7yg=",
+            "notifications-email-address": "shafiul.islam@cancer.org.uk"
           },
           "systems-manager-parameter-values": {
             "enabled": "Y",
@@ -163,8 +162,9 @@
           ],
           "settings": {
             "use-default-root-name": "Y",
-            "snowflake-principal-arn": "",
-            "snowflake-principal-external-id": ""
+            "snowflake-principal-arn": "arn:aws:iam::291942177718:user/yj24-s-ukst3098",
+            "snowflake-principal-external-id": "CRUK_SFCRole=75_9Ty2DdMwGWIjb9PE01Yxa54J7yg=",
+            "notifications-email-address": "shafiul.islam89@gmail.com"
           },
           "systems-manager-parameter-values": {
             "enabled": "N",
@@ -195,7 +195,8 @@
           "settings": {
             "use-default-root-name": "Y",
             "snowflake-principal-arn": "",
-            "snowflake-principal-external-id": ""
+            "snowflake-principal-external-id": "",
+            "notifications-email-address": ""
           },
           "systems-manager-parameter-values": {
             "enabled": "N",
@@ -226,7 +227,8 @@
           "settings": {
             "use-default-root-name": "Y",
             "snowflake-principal-arn": "",
-            "snowflake-principal-external-id": ""
+            "snowflake-principal-external-id": "",
+            "notifications-email-address": ""
           },
           "systems-manager-parameter-values": {
             "enabled": "N",
@@ -257,7 +259,8 @@
           "settings": {
             "use-default-root-name": "Y",
             "snowflake-principal-arn": "",
-            "snowflake-principal-external-id": ""
+            "snowflake-principal-external-id": "",
+            "notifications-email-address": ""
           },
           "systems-manager-parameter-values": {
             "enabled": "N",

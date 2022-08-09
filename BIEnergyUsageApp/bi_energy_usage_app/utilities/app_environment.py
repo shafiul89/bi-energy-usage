@@ -86,6 +86,7 @@ class EnvironmentVariableNames(Enum):
     AWS_SECRET_ACCESS_KEY = 11,  # for debug use outside of AWS only
     AWS_SESSION_TOKEN = 12,      # for debug use outside of AWS only
     AWS_S3_BUCKET_NAME = 13,
+    AWS_SNS_TOPIC_ARN = 14,
     DATA_SOURCE_GAS_ROOT_URL = 21,
     DATA_SOURCE_GAS_FILENAMES = 22,
     DATA_SOURCE_ELECTRICITY_ROOT_URL = 23,

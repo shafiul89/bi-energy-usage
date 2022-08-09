@@ -8,6 +8,7 @@ from aws_cdk import (
     aws_logs,
     aws_s3,
     aws_ssm,
+    aws_sns,
     aws_secretsmanager,
     RemovalPolicy,
     Stack
@@ -22,7 +23,7 @@ class EnergyUsageTaskProperties:
 
     def __init__(self, base_name: str, vpc_id: str, subnet_ids: list[str], bucket: aws_s3.Bucket,
                  ecr_repo: aws_ecr.Repository, image_tag: str, task_definition_env_vars: dict[str, str],
-                 parameters: dict[str, aws_ssm.StringParameter]):
+                 parameters: dict[str, aws_ssm.StringParameter], notification_topic: aws_sns.Topic):
         """
         Create configuration values for creating an instance of the EnergyUsageTaskConstruct class.
 
@@ -46,6 +47,8 @@ class EnergyUsageTaskProperties:
         parameters : dict[str, aws_ssm.StringParameter]
             A dictionary containing parameter names and Systems Manager Parameter Store parameters to be linked to
             environment variables in the docker container.
+        notification_topic : aws_sns.Topic
+            The SNS notification topic for the ELT code in the docker container to use to send email alerts.
         """
         self.base_name = base_name
         self.vpc_id = vpc_id
@@ -55,6 +58,7 @@ class EnergyUsageTaskProperties:
         self.image_tag = image_tag
         self.task_definition_env_vars = task_definition_env_vars
         self.parameters = parameters
+        self.notification_topic = notification_topic
 
 
 class EnergyUsageTaskConstruct(Construct):
@@ -87,7 +91,7 @@ class EnergyUsageTaskConstruct(Construct):
 
         # create IAM roles
         exec_role = self.create_exec_role()
-        task_role = self.create_task_role(properties.bucket)
+        task_role = self.create_task_role(properties.bucket, properties.notification_topic)
 
         # additional permissions
         self.grant_role_parameter_access(properties.base_name, exec_role)
@@ -105,8 +109,13 @@ class EnergyUsageTaskConstruct(Construct):
         # ecs cluster
         cluster = aws_ecs.Cluster(self, 'task-cluster', vpc=vpc, cluster_name=properties.base_name)
 
-        # add the bucket name to the task definition environment variables
+        # add the bucket name and SNS topic name to the task definition environment variables
         properties.task_definition_env_vars['CRUK_AWS_S3_BUCKET_NAME'] = properties.bucket.bucket_name
+        if properties.notification_topic is not None and \
+                properties.notification_topic.topic_name is not None \
+                and len(properties.notification_topic.topic_name) > 0 \
+                and not properties.notification_topic.topic_name.isspace():
+            properties.task_definition_env_vars['CRUK_AWS_SNS_TOPIC_ARN'] = properties.notification_topic.topic_arn
 
         # task definition
         fargate_task_definition = self.create_task_definition(
@@ -145,14 +154,16 @@ class EnergyUsageTaskConstruct(Construct):
         exec_role.assume_role_policy.add_statements(exec_role_assume_policy)
         return exec_role
 
-    def create_task_role(self, bucket: aws_s3.Bucket):
+    def create_task_role(self, bucket: aws_s3.Bucket, notification_topic: aws_sns.Topic):
         """
         Create the IAM role used by Python code running inside the container to access other AWS resources.
 
         Parameters
         ----------
         bucket : aws_s3.Bucket
-            The S3 bucket the task code will access.
+            The S3 bucket that the task code will access.
+        notification_topic : aws_sns.Topic
+            The SNS notification topic that the task code will access.
 
         Returns
         -------
@@ -177,6 +188,8 @@ class EnergyUsageTaskConstruct(Construct):
             resources=['*']
         )
         task_role.add_to_policy(task_ecs_policy)
+        if notification_topic is not None:
+            notification_topic.grant_publish(task_role)
         return task_role
 
     # -------------------- ALLOW EXEC ROLE TO READ PARAMETER / SECRET --------------------

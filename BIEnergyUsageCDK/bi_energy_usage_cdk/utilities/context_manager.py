@@ -120,6 +120,7 @@ class EnvironmentSettingsContext:
         self.use_default_root_name = context_data['use-default-root-name'].upper() == 'Y'
         self.snowflake_principal_arn = context_data['snowflake-principal-arn']
         self.snowflake_principal_external_id = context_data['snowflake-principal-external-id']
+        self.notifications_email_address = context_data['notifications-email-address']
 
 
 class EnvironmentContext:

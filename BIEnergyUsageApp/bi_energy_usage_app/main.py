@@ -5,6 +5,7 @@ import bi_energy_usage_app.utilities.app_environment as app_env
 import bi_energy_usage_app.utilities.app_logging as app_logging
 import bi_energy_usage_app.elt.file_processor as file_processor
 import bi_energy_usage_app.elt.snowflake_processor as snowflake_processor
+import bi_energy_usage_app.utilities.notifications as notifications
 
 
 def main():
@@ -16,7 +17,7 @@ def main():
         app_logging.start_logging(service_name, 'DEBUG')
     except Exception as e:
         print('Fatal error initialising logging, execution terminated: ' + str(e))
-        # todo - send failure notification
+        notifications.publish_failure_notification('Fatal error initialising logging.', sys.exc_info())
         sys.exit(1)
 
     # top-level error handler to catch any exception not caught by more specific error handlers within the app code
@@ -38,9 +39,12 @@ def main():
         # reload Snowflake
         snowflake_processor.load_snowflake()
 
+        # finished successfully
+        notifications.publish_success_notification('Energy data has been loaded into Snowflake.')
+
     except Exception as e:
         logging.error('Unhandled application error.', exc_info=e)
-        # todo - send failure notification
+        notifications.publish_failure_notification('Unhandled application error.', sys.exc_info())
 
 
 if __name__ == '__main__':
