@@ -1,6 +1,15 @@
 name: ELT App - Lint Code and Run Unit Tests
 
-on: [workflow_dispatch]  # also add: push, pull_request  - also:  on.<pull_request|pull_request_target>.<branches|branches-ignore>
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    actions:
+      - opened
+      - edited
+      - reopened
+      - synchronize
 
 jobs:
   test-app:
