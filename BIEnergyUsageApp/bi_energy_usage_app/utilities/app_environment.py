@@ -26,7 +26,7 @@ def is_running_in_aws() -> bool:
     """
     Is the code running inside an ECS container in AWS?
 
-    This approach is based on
+    This approach is based on:
     https://docs.aws.amazon.com/AmazonECS/latest/userguide/task-metadata-endpoint-v4-fargate.html
 
     Returns
